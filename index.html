@@ -176,23 +176,14 @@
       renderGameDatalist();
     }
 
-    // ✅ 통합 필터링 및 렌더링 함수
-    function renderFilteredDetails() {
-      let filteredData = gameData;
-
-      if (selectedGame) {
-        filteredData = filteredData.filter(item => item.game === selectedGame);
-      }
-      if (selectedUser) {
-        filteredData = filteredData.filter(item => item.name === selectedUser);
-      }
-
+    // ✅ 공통 테이블 렌더링 함수
+    function renderTableRows(filteredData) {
       const tbody = document.getElementById('data-body');
       tbody.innerHTML = '';
 
       filteredData.forEach((item) => {
         let timePerProblem = 0;
-        if (item.score && item.score !== 0) {
+        if (item.score && Number(item.score) !== 0) {
           timePerProblem = (Number(item.elapsedTime) / Number(item.score)) * 10;
         }
 
@@ -229,8 +220,8 @@
       });
     }
 
-    // ✅ ❶ 소요시간을 내림차순 정렬하는 함수
-    function sortByTimeDesc() {
+    // ✅ 필터링 후 기본 테이블 렌더링 함수
+    function renderFilteredDetails() {
       let filteredData = gameData;
 
       if (selectedGame) {
@@ -240,58 +231,74 @@
         filteredData = filteredData.filter(item => item.name === selectedUser);
       }
 
-      // 문제당 소요시간이 큰 순서대로 정렬
+      renderTableRows(filteredData);
+    }
+
+    // ✅ ❶ 문제당 소요시간을 내림차순 정렬하는 함수
+    function sortByTimeDesc() {
+      let filteredData = gameData;
+      if (selectedGame) {
+        filteredData = filteredData.filter(item => item.game === selectedGame);
+      }
+      if (selectedUser) {
+        filteredData = filteredData.filter(item => item.name === selectedUser);
+      }
+
       filteredData.sort((a, b) => {
         let timeA = 0;
         let timeB = 0;
-        if (a.score) {
+        if (a.score && Number(a.score) !== 0) {
           timeA = (Number(a.elapsedTime) / Number(a.score)) * 10;
         }
-        if (b.score) {
+        if (b.score && Number(b.score) !== 0) {
           timeB = (Number(b.elapsedTime) / Number(b.score)) * 10;
         }
         return timeB - timeA;
       });
 
-      // 정렬된 데이터로 테이블 다시 그려주기
-      const tbody = document.getElementById('data-body');
-      tbody.innerHTML = '';
+      renderTableRows(filteredData);
+    }
 
-      filteredData.forEach((item) => {
-        let timePerProblem = 0;
-        if (item.score && item.score !== 0) {
-          timePerProblem = (Number(item.elapsedTime) / Number(item.score)) * 10;
-        }
+    // ✅ 게임 이름을 내림차순 정렬하는 함수
+    function sortByGameDesc() {
+      let filteredData = gameData;
+      if (selectedGame) {
+        filteredData = filteredData.filter(item => item.game === selectedGame);
+      }
+      if (selectedUser) {
+        filteredData = filteredData.filter(item => item.name === selectedUser);
+      }
 
-        const tr = document.createElement('tr');
+      filteredData.sort((a, b) => b.game.localeCompare(a.game));
+      renderTableRows(filteredData);
+    }
 
-        const gameTd = document.createElement('td');
-        gameTd.innerHTML = `<a href="#" onclick="goToGame('${item.game}')">${item.game}</a>`;
+    // ✅ 점수를 내림차순 정렬하는 함수
+    function sortByScoreDesc() {
+      let filteredData = gameData;
+      if (selectedGame) {
+        filteredData = filteredData.filter(item => item.game === selectedGame);
+      }
+      if (selectedUser) {
+        filteredData = filteredData.filter(item => item.name === selectedUser);
+      }
 
-        const nameTd = document.createElement('td');
-        nameTd.innerHTML = `<a href="#" onclick="goToUser('${item.name}')">${item.name}</a>`;
+      filteredData.sort((a, b) => Number(b.score) - Number(a.score));
+      renderTableRows(filteredData);
+    }
 
-        const scoreTd = document.createElement('td');
-        scoreTd.textContent = item.score;
+    // ✅ 타임스템프를 내림차순 정렬하는 함수
+    function sortByTimestampDesc() {
+      let filteredData = gameData;
+      if (selectedGame) {
+        filteredData = filteredData.filter(item => item.game === selectedGame);
+      }
+      if (selectedUser) {
+        filteredData = filteredData.filter(item => item.name === selectedUser);
+      }
 
-        const elapsedTimeTd = document.createElement('td');
-        elapsedTimeTd.textContent = item.elapsedTime;
-
-        const timePerProblemTd = document.createElement('td');
-        timePerProblemTd.textContent = timePerProblem.toFixed(2);
-
-        const timestampTd = document.createElement('td');
-        timestampTd.textContent = new Date(item.timestamp).toLocaleString();
-
-        tr.appendChild(gameTd);
-        tr.appendChild(nameTd);
-        tr.appendChild(scoreTd);
-        tr.appendChild(elapsedTimeTd);
-        tr.appendChild(timePerProblemTd);
-        tr.appendChild(timestampTd);
-
-        tbody.appendChild(tr);
-      });
+      filteredData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      renderTableRows(filteredData);
     }
 
     // ✅ 게임/이름 클릭 시 필터링 함수
@@ -328,7 +335,7 @@
 
       const exportData = filteredData.map(item => {
         let timePerProblem = 0;
-        if (item.score && item.score !== 0) {
+        if (item.score && Number(item.score) !== 0) {
           timePerProblem = (Number(item.elapsedTime) / Number(item.score)) * 10;
         }
         return {
@@ -384,22 +391,27 @@
       <table>
         <thead>
           <tr>
-            <th>게임</th>
+            <!-- 게임 열에 내림차순 링크 추가 -->
+            <th>
+              게임 
+              <a href="#" style="margin-left:8px; color:blue; text-decoration:underline;" onclick="sortByGameDesc()">내림차순</a>
+            </th>
             <th>이름</th>
-            <th>점수</th>
+            <!-- 점수 열에 내림차순 링크 추가 -->
+            <th>
+              점수 
+              <a href="#" style="margin-left:8px; color:blue; text-decoration:underline;" onclick="sortByScoreDesc()">내림차순</a>
+            </th>
             <th>경과시간</th>
-            <!-- ❷ 헤더 옆에 “내림차순” 링크/버튼 추가 -->
             <th>
               문제당 소요시간
-              <a
-                href="#"
-                style="margin-left:8px; color:blue; text-decoration:underline;"
-                onclick="sortByTimeDesc()"
-              >
-                내림차순
-              </a>
+              <a href="#" style="margin-left:8px; color:blue; text-decoration:underline;" onclick="sortByTimeDesc()">내림차순</a>
             </th>
-            <th>Timestamp</th>
+            <!-- 타임스템프 열에 내림차순 링크 추가 -->
+            <th>
+              Timestamp 
+              <a href="#" style="margin-left:8px; color:blue; text-decoration:underline;" onclick="sortByTimestampDesc()">내림차순</a>
+            </th>
           </tr>
         </thead>
         <tbody id="data-body"></tbody>
